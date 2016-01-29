@@ -32,6 +32,7 @@ namespace OpenQA.Selenium.Edge
     {
         private const string MicrosoftWebDriverServiceFileName = "MicrosoftWebDriver.exe";
         private static readonly Uri MicrosoftWebDriverDownloadUrl = new Uri("http://go.microsoft.com/fwlink/?LinkId=619687");
+        private string applicationUserModelId;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="EdgeDriverService"/> class.
@@ -39,9 +40,25 @@ namespace OpenQA.Selenium.Edge
         /// <param name="executablePath">The full path to the EdgeDriver executable.</param>
         /// <param name="executableFileName">The file name of the EdgeDriver executable.</param>
         /// <param name="port">The port on which the EdgeDriver executable should listen.</param>
-        private EdgeDriverService(string executablePath, string executableFileName, int port)
+        /// <param name="applicationUserModelId">The unique identifier for the WWA that EdgeDriver should launch</param>
+        private EdgeDriverService(string executablePath, string executableFileName, int port, string applicationUserModelId = null)
             : base(executablePath, port, executableFileName, MicrosoftWebDriverDownloadUrl)
         {
+            this.applicationUserModelId = applicationUserModelId;
+        }
+
+        /// <summary>
+        /// Gets the command-line arguments for the driver service.
+        /// </summary>
+        protected override string CommandLineArguments
+        {
+            get
+            {
+                string wwaDriverServiceArgs = this.applicationUserModelId == null ?
+                    string.Empty : string.Format(CultureInfo.InvariantCulture, "--package={0}", this.applicationUserModelId);
+
+                return base.CommandLineArguments + " " + wwaDriverServiceArgs;
+            }
         }
 
         /// <summary>
@@ -85,6 +102,19 @@ namespace OpenQA.Selenium.Edge
         public static EdgeDriverService CreateDefaultService(string driverPath, string driverExecutableFileName, int port)
         {
             return new EdgeDriverService(driverPath, driverExecutableFileName, port);
+        }
+
+        /// <summary>
+        /// Creates a WWA instance of the EdgeDriverService using a specified path to the EdgeDriver executable with the given name, listening port and the applicationUserModelId of the installed WWA that will be launched by EdgeDriver.
+        /// </summary>
+        /// <param name="driverPath">The directory containing the EdgeDriver executable.</param>
+        /// <param name="driverExecutableFileName">The name of the EdgeDriver executable file</param>
+        /// <param name="port">The port number on which the driver will listen</param>
+        /// <param name="applicationUserModelId">The unique identifier for the WWA that EdgeDriver should launch</param>
+        /// <returns>A EdgeDriverService using the specified port.</returns>
+        public static EdgeDriverService CreateWWAService(string driverPath, string driverExecutableFileName, int port, string applicationUserModelId)
+        {
+            return new EdgeDriverService(driverPath, driverExecutableFileName, port, applicationUserModelId);
         }
     }
 }
